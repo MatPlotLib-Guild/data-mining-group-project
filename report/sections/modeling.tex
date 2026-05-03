@@ -1,0 +1,91 @@
+\clearpage
+\section{Modeling (CRISP-DM Phase 4)}
+
+This phase used the prepared PR-level table to train and compare binary classification models for predicting whether a pull request will be merged. The goal was not only to maximize classification metrics, but also to test whether opening-time and pre-opening activity features contain useful signal beyond the majority-class baseline.
+
+\subsection{Select Modeling Technique}
+
+The task was formulated as binary classification:
+
+\[
+P(\texttt{merged}=1 \mid X),
+\]
+
+where \(X\) contains PR opening metadata and repository/contributor activity observed before the opening day. Four model families were selected:
+
+\begin{itemize}
+    \item \textbf{DummyClassifier}, using the majority class as a trivial baseline.
+    \item \textbf{Logistic Regression}, as an interpretable linear baseline with class weighting.
+    \item \textbf{Random Forest}, as a non-linear ensemble model robust to feature interactions.
+    \item \textbf{Histogram-based Gradient Boosting}, as a stronger non-linear model for tabular data.
+\end{itemize}
+
+The main modeling assumption is that the selected features are available at PR publication time. Closure-time information and future same-day events were excluded. Since the positive class is dominant, model quality was assessed with threshold-free and ranking metrics in addition to default-threshold classification scores.
+
+\subsection{Generate Test Design}
+
+The prepared dataset contained 195,425 PR records. A stratified train/test split was used with 75\% of records for training and 25\% for testing. The resulting split contained 146,568 training records and 48,857 test records. The merge rate remained stable across the split: approximately 0.8574 in both train and test sets.
+
+The selected evaluation metrics were:
+
+\begin{itemize}
+    \item ROC-AUC, to evaluate ranking quality across both classes;
+    \item PR-AUC, to evaluate precision-recall performance under class imbalance;
+    \item F1, precision, and recall at the default decision threshold;
+    \item precision@10\%, to evaluate whether the top-ranked merge candidates are actually merged;
+    \item risk precision@k, to evaluate the model's ability to identify PRs at high risk of not being merged.
+\end{itemize}
+
+\subsection{Build Model}
+
+All models used the same safe feature set. The feature matrix contained 26 numeric predictors: opening-time PR size and timing features, previous-day repository history features, previous-day actor history features, and a small number of derived ratios and log-transformed size variables.
+
+The histogram-based gradient boosting model used 200 boosting iterations, learning rate 0.05, maximum 31 leaf nodes, and L2 regularization 0.1. The random forest used 200 trees, maximum depth 12, minimum leaf size 50, and balanced subsampling. Logistic regression used standardized features and class weighting.
+
+\subsection{Assess Model}
+
+Table~\ref{tab:model_results} summarizes the held-out model comparison. The histogram-based gradient boosting model achieved the strongest ROC-AUC and PR-AUC, so it was selected as the main model for interpretation and evaluation.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Held-out model comparison.}
+\label{tab:model_results}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & ROC-AUC & PR-AUC & F1 & Precision & Recall & Precision@10\% \\
+\midrule
+hist\_gradient\_boosting & 0.7324 & 0.9360 & 0.9316 & 0.8745 & 0.9967 & 0.9785 \\
+random\_forest & 0.7271 & 0.9351 & 0.8434 & 0.9085 & 0.7869 & 0.9781 \\
+logistic\_regression & 0.6547 & 0.9119 & 0.7828 & 0.8950 & 0.6956 & 0.9527 \\
+dummy\_most\_frequent & 0.5000 & 0.8574 & 0.9232 & 0.8574 & 1.0000 & 0.8565 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The majority-class baseline obtains a high F1 score because the dataset is dominated by merged PRs. This confirms that accuracy-like metrics are insufficient. The stronger models improve ROC-AUC and PR-AUC over the baseline. The best model, histogram-based gradient boosting, reached ROC-AUC 0.7324 and PR-AUC 0.9360, compared with ROC-AUC 0.5000 and PR-AUC 0.8574 for the dummy model.
+
+Permutation importance was computed on the best model using ROC-AUC as the scoring metric. Table~\ref{tab:permutation_importance} shows the top features. The most important signals are repository and actor activity histories rather than raw PR size alone. This suggests that merge outcomes depend strongly on the surrounding repository workflow and contributor context.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Top permutation importance features for the selected model.}
+\label{tab:permutation_importance}
+\begin{tabular}{lrr}
+\toprule
+Feature & Mean importance & Std. \\
+\midrule
+repo\_push\_events\_before\_day & 0.0644 & 0.0021 \\
+repo\_actor\_days\_before\_day & 0.0579 & 0.0021 \\
+actor\_push\_events\_before\_day & 0.0368 & 0.0023 \\
+repo\_issue\_comment\_share\_before\_day & 0.0330 & 0.0009 \\
+actor\_pr\_events\_before\_day & 0.0171 & 0.0030 \\
+repo\_pr\_share\_before\_day & 0.0162 & 0.0016 \\
+commits & 0.0149 & 0.0006 \\
+repo\_events\_before\_day & 0.0132 & 0.0013 \\
+repo\_pr\_events\_before\_day & 0.0125 & 0.0020 \\
+repo\_issue\_comments\_before\_day & 0.0105 & 0.0016 \\
+\bottomrule
+\end{tabular}
+\end{table}

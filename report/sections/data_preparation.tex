@@ -1,0 +1,81 @@
+\clearpage
+\section{Data Preparation (CRISP-DM Phase 3)}
+
+The purpose of data preparation was to transform the raw GH Archive event stream into a single supervised table suitable for pull request outcome prediction. The chosen analytical grain was one row per pull request. This grain follows directly from the business and data mining goals: the project predicts whether a newly opened PR will eventually be merged.
+
+\subsection{Select Data}
+
+The starting point was the converted analytical event table containing 9,269,533 public GitHub events. From this table, all \texttt{PullRequestEvent} rows were selected for target construction and PR-level metadata extraction. The remaining event types were not discarded entirely; they were used to construct repository and actor history features before PR opening.
+
+For the supervised target, only PRs satisfying the following conditions were retained:
+
+\begin{itemize}
+    \item an \texttt{opened} PR event was observed;
+    \item a later \texttt{closed} PR event was observed;
+    \item the closed event contained \texttt{pull\_request.merged};
+    \item the closing timestamp was later than the opening timestamp.
+\end{itemize}
+
+This selection produced 195,425 PR-level records. The selection excludes PRs that were opened before the sample window, closed after the sample window, or did not have a valid observed lifecycle in the downloaded data. This restriction makes the target clean, but limits the interpretation to PRs whose lifecycle is observable in the sample.
+
+\subsection{Clean Data}
+
+The raw event archive was converted from compressed JSON-lines files to a flat analytical table. During this conversion, common top-level fields were extracted and the nested payload was preserved as JSON text. This avoided unstable nested schemas across event types while keeping the original payload available for PR-specific extraction.
+
+In the PR lifecycle table, duplicated or repeated events were handled by sorting events by timestamp and taking the first observed opening and first observed closing event per PR identifier. Records where the closing timestamp was not later than the opening timestamp were removed. Closure-time fields were retained only for target construction and diagnostics. They were explicitly excluded from modeling to avoid leakage.
+
+Several fields were checked for usability. The extracted author association field had only one value in the final PR table, so it was excluded from the model. Numeric PR metadata such as commits, additions, deletions, and changed files had no missing values in the final lifecycle table.
+
+\subsection{Construct Data}
+
+The target variable was constructed as:
+
+\[
+\texttt{merged} =
+\begin{cases}
+1, & \text{if the closed PR event has } \texttt{pull\_request.merged=true},\\
+0, & \text{if the closed PR event has } \texttt{pull\_request.merged=false}.
+\end{cases}
+\]
+
+The final table had a merge rate of 0.8574, meaning that most observed PRs were merged. This imbalance was later handled by using baseline comparison and ranking-oriented metrics.
+
+The opening-time feature group included:
+
+\begin{itemize}
+    \item commits, additions, deletions, and changed files;
+    \item opening hour, opening weekday, and weekend flag;
+    \item draft flag;
+    \item log-transformed versions of size features and total changed lines.
+\end{itemize}
+
+Repository history features were constructed from all events before the PR opening day. These included cumulative previous-day repository event volume, previous PR event volume, previous issue-comment volume, previous push-event volume, and cumulative repository actor-days.
+
+Actor history features were constructed analogously for the PR opener. These included previous actor event volume, previous PR activity, previous issue-comment activity, previous push-event activity, and cumulative actor repo-days.
+
+The use of previous-day aggregation is conservative: for a PR opened on a given date, all events from that same date are excluded from history features. This prevents events occurring after PR publication from entering the model.
+
+\subsection{Integrate Data}
+
+The final PR-level table was produced by joining three components:
+
+\begin{enumerate}
+    \item the PR opening table containing PR identity and publication-time metadata;
+    \item the PR closure table containing only the target and closure diagnostics;
+    \item previous-day repository and actor history summaries.
+\end{enumerate}
+
+The resulting table contains 195,425 PR records, 59,624 unique repositories, and 62,011 unique PR-opening actors. Median observed time to close was 0 hours and the 90th percentile was 45 hours. The zero median reflects that many PRs in the sample are opened and closed quickly, which is plausible for small fixes, automated updates, or repository-internal workflows.
+
+\subsection{Format Data}
+
+The final modeling dataset was stored as a PR-level analytical table. Modeling used only non-leaky feature columns. The following columns were excluded from model inputs:
+
+\begin{itemize}
+    \item raw PR, event, repository, and actor identifiers;
+    \item target and target-derived fields;
+    \item closure-time diagnostics such as closing timestamp and time-to-close;
+    \item constant or uninformative fields such as author association.
+\end{itemize}
+
+For linear models, numeric features were median-imputed and standardized. For tree-based models, numeric features were median-imputed without scaling. The final modeling matrix contained 195,425 rows and 26 numeric feature columns.

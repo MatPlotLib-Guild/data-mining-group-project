@@ -1,0 +1,45 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+\graphicspath{{../assets/}{assets/}{figures/}}
+
+\title{CRISP-DM Report: Predicting Pull Request Merge Outcomes from GH Archive Events}
+\author{%
+    Nikita Zagainov\\
+    \href{mailto:n.zagainov@innopolis.university}{n.zagainov@innopolis.university}\\
+    Data Scientist, ML Engineer
+    \and
+    Dmitry Tetkin\\
+    \href{mailto:d.tetkin@innopolis.university}{d.tetkin@innopolis.university}\\
+    Business Unit, Project Manager, Business Analyst
+}
+\date{May 2026}
+
+\setlist[itemize]{noitemsep, topsep=2pt}
+\setlist[enumerate]{noitemsep, topsep=2pt}
+
+\begin{document}
+\maketitle
+
+\input{sections/business_understanding.tex}
+\input{sections/data_understanding.tex}
+\input{sections/data_preparation.tex}
+\input{sections/modeling.tex}
+\input{sections/evaluation.tex}
+\input{sections/deployment.tex}
+
+\end{document}
