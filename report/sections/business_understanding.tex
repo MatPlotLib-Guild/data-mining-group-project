@@ -4,9 +4,18 @@
 
 \subsubsection*{Background}
 
-Open-source software development on GitHub depends heavily on pull requests (PRs) as the main mechanism for proposing, reviewing, and integrating code changes. Maintainers often need to prioritize review attention, while contributors benefit from understanding which early signals are associated with successful integration. Public GitHub event data captures observable workflow signals such as PR opening, PR closure, repository activity, actor activity, comments, pushes, and other event types. It does not capture private repository activity, full maintainer discussions, continuous integration results, or subjective review reasoning. Therefore, the project focuses on observable public signals rather than attempting to fully reproduce human maintainer decisions.
+Open-source software development on GitHub depends heavily on pull requests (PRs) as the main mechanism for
+proposing, reviewing, and integrating code changes. Maintainers often need to prioritize review attention,
+while contributors benefit from understanding which early signals are associated with successful integration.
+Public GitHub event data captures observable workflow signals such as PR opening, PR closure, repository
+activity, actor activity, comments, pushes, and other event types. It does not capture private repository
+activity, full maintainer discussions, continuous integration results, or subjective review reasoning.
+Therefore, the project focuses on observable public signals rather than attempting to fully reproduce human
+maintainer decisions.
 
-The project studies \textbf{pull request merge outcome prediction}. The analytical objective is to estimate whether a PR will eventually be merged using information available at the moment of PR publication and repository or actor activity observed before the opening day.
+The project studies \textbf{pull request merge outcome prediction}. The analytical objective is to estimate
+whether a PR will eventually be merged using information available at the moment of PR publication and
+repository or actor activity observed before the opening day.
 
 \subsubsection*{Business Objectives}
 
@@ -31,15 +40,20 @@ The project studies \textbf{pull request merge outcome prediction}. The analytic
 
 \paragraph{People.}
 \begin{itemize}
-    \item Data Scientist / ML Engineer: data extraction, feature construction, modeling, evaluation, and report preparation.
-    \item Business Unit / Project Manager / Business Analyst: business framing, stakeholder interpretation, and presentation/video delivery.
+    \item Data Scientist / ML Engineer: data extraction, feature construction, modeling, evaluation, and
+        report preparation.
+    \item Business Unit / Project Manager / Business Analyst: business framing, stakeholder interpretation,
+        and presentation/video delivery.
 \end{itemize}
 
 \paragraph{Data.}
-The project uses a local sample of GH Archive hourly event records from July 2015. The raw data consists of compressed JSON-lines archives of public GitHub events. These records were converted into a flat analytical event table for efficient inspection and modeling. The converted event table contains 9,269,533 public GitHub events.
+The project uses a local sample of GH Archive hourly event records from July 2015. The raw data consists of
+compressed JSON-lines archives of public GitHub events. These records were converted into a flat analytical
+event table for efficient inspection and modeling. The converted event table contains 9,269,533 public GitHub events.
 
 \paragraph{Tools.}
-Python, Polars, pyarrow, scikit-learn, a notebook environment, and matplotlib were used. Polars was used for event processing and feature construction, while scikit-learn was used for model fitting and evaluation.
+Python, Polars, pyarrow, scikit-learn, a notebook environment, and matplotlib were used. Polars was used for
+event processing and feature construction, while scikit-learn was used for model fitting and evaluation.
 
 \subsubsection*{Requirements, Assumptions, and Constraints}
 
@@ -55,50 +69,103 @@ Python, Polars, pyarrow, scikit-learn, a notebook environment, and matplotlib we
 \begin{itemize}
     \item Public GitHub events are sufficiently informative to capture part of the PR merge process.
     \item A closed PR with \texttt{pull\_request.merged=true} represents successful integration.
-    \item Historical repository and actor activity observed before the PR opening day can be used as context available at publication time.
+    \item Historical repository and actor activity observed before the PR opening day can be used as context
+        available at publication time.
 \end{itemize}
 
 \paragraph{Constraints.}
 \begin{itemize}
-    \item The data window is limited, so repository and actor histories are left-censored at the beginning of the sample.
-    \item Only PRs whose opening and closing events are both observed in the downloaded window can receive a clean supervised label.
-    \item GH Archive stores event payloads with event-specific JSON schemas, so not all potentially useful GitHub fields are uniformly available.
+    \item The data window is limited, so repository and actor histories are left-censored at the beginning of
+        the sample.
+    \item Only PRs whose opening and closing events are both observed in the downloaded window can receive a
+        clean supervised label.
+    \item GH Archive stores event payloads with event-specific JSON schemas, so not all potentially useful
+        GitHub fields are uniformly available.
     \item The analysis is offline and cannot validate real maintainer decisions through live A/B testing.
 \end{itemize}
 
 \subsubsection*{Risks and Contingencies}
 
 \begin{itemize}
-    \item \textbf{Target leakage risk.} Closure-time fields may accidentally enter the feature matrix. Mitigation: exclude closure timestamps, raw merge labels, time-to-close diagnostics, and closure event identifiers from model features.
-    \item \textbf{Sample bias risk.} Requiring both opening and closing events favors PRs that complete inside the observation window. Mitigation: interpret the task as short-window observable-lifecycle PR modeling and document this limitation.
-    \item \textbf{Class imbalance risk.} Most observed PRs are merged. Mitigation: compare against a majority baseline and use PR-AUC, ROC-AUC, precision@k, and risk-ranking metrics.
-    \item \textbf{Historical truncation risk.} Early-window PRs have incomplete prior history. Mitigation: use conservative previous-day history features and state this as a limitation.
+    \item \textbf{Target leakage risk.} Closure-time fields may accidentally enter the feature matrix.
+        Mitigation: exclude closure timestamps, raw merge labels, time-to-close diagnostics, and closure
+        event identifiers from model features.
+    \item \textbf{Sample bias risk.} Requiring both opening and closing events favors PRs that complete
+        inside the observation window. Mitigation: interpret the task as short-window observable-lifecycle PR
+        modeling and document this limitation.
+    \item \textbf{Class imbalance risk.} Most observed PRs are merged. Mitigation: compare against a majority
+        baseline and use PR-AUC, ROC-AUC, precision@k, and risk-ranking metrics.
+    \item \textbf{Historical truncation risk.} Early-window PRs have incomplete prior history. Mitigation:
+        use conservative previous-day history features and state this as a limitation.
 \end{itemize}
 
 \subsubsection*{Terminology}
 
 \begin{table}[H]
-\centering
-\caption{Project terminology.}
-\begin{tabularx}{\textwidth}{lX}
-\toprule
-Term & Meaning \\
-\midrule
-GH Archive & Public archive of GitHub event stream records. \\
-Pull request & GitHub object proposing code changes to a repository. \\
-Merged PR & Closed PR whose payload reports \texttt{pull\_request.merged=true}. \\
-Non-merged PR & Closed PR whose payload reports \texttt{pull\_request.merged=false}. \\
-Risk score & \(1 - P(\text{merged})\), used to rank PRs by non-merge risk. \\
-Actor history & Aggregated previous public activity of the PR opener. \\
-Repository history & Aggregated previous public activity of the target repository. \\
-\bottomrule
-\end{tabularx}
+    \centering
+    \caption{Project terminology.}
+    \begin{tabularx}{\textwidth}{lX}
+        \toprule
+        Term & Meaning \\
+        \midrule
+        GH Archive & Public archive of GitHub event stream records. \\
+        Pull request & GitHub object proposing code changes to a repository. \\
+        Merged PR & Closed PR whose payload reports \texttt{pull\_request.merged=true}. \\
+        Non-merged PR & Closed PR whose payload reports \texttt{pull\_request.merged=false}. \\
+        Risk score & \(1 - P(\text{merged})\), used to rank PRs by non-merge risk. \\
+        Actor history & Aggregated previous public activity of the PR opener. \\
+        Repository history & Aggregated previous public activity of the target repository. \\
+        \bottomrule
+    \end{tabularx}
 \end{table}
 
 \subsubsection*{Costs and Benefits}
 
-The main project cost is analyst and engineering time required to acquire event archives, convert nested event records into analytical tables, construct a PR-level supervised dataset, and evaluate models. No paid data sources or commercial software were required. The potential benefit is an interpretable prioritization signal for maintainers: instead of treating all newly opened PRs equally, a dashboard or report could highlight PRs with unusually high non-merge risk for earlier inspection. In the course setting, the benefit is analytical rather than directly financial.
+\paragraph{Costs and Benefits.}
+The project cost is primarily composed of personnel time and small infrastructure overhead.
+Because the project is conducted in a university setting, the estimates below are approximate
+rather than contractual. They are included to make the business case explicit and to document
+the resources needed to reproduce a similar analysis.
 
+\begin{table}[H]
+    \centering
+    \caption{Approximate project cost estimate.}
+    \begin{tabular}{p{0.34\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.18\textwidth}}
+        \toprule
+        Cost component & Quantity & Unit cost & Estimated cost \\
+        \midrule
+        Data scientist / ML engineer work: data extraction, preprocessing, modeling, evaluation, report support
+        & 90 hours & \$5/hour & \$450 \\
+        Business analyst / project manager work: business framing, requirements, interpretation, presentation planning
+        & 40 hours & \$5/hour & \$200 \\
+        Laptop depreciation during project work
+        & 130 hours & \$0.15/hour & \$19.50 \\
+        Internet and data transfer overhead
+        & 1 project & \$10 & \$10 \\
+        Electricity and local compute usage
+        & 130 hours & \$0.03/hour & \$3.90 \\
+        Storage overhead for raw archives and derived tables
+        & 1 project & \$5 & \$5 \\
+        \midrule
+        \textbf{Total estimated project cost} & & & \textbf{\$688.40} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The main benefit is not direct revenue in the course setting, but decision-support value.
+A deployed version could help maintainers or developer-tool teams prioritize review attention
+by ranking newly opened pull requests according to merge likelihood or non-merge risk. For
+example, if a maintainer team reviews 500 new PRs per month and manually spends 5 minutes
+on each initial triage decision, the monthly triage effort is approximately 41.7 hours. If a ranking
+tool reduces this effort by 10\%, the saving is about 4.2 hours per month. At an assumed
+engineering cost of \$30/hour, this corresponds to approximately \$126 per month, or \$1,512 per
+year for one maintainer team.
+
+The benefit estimate is intentionally conservative. The model should not automatically reject
+or accept PRs; its value is in earlier identification of PRs that may require human attention.
+Additional non-monetary benefits include better understanding of repository workflow patterns,
+clearer contributor guidance, and a reproducible analytical pipeline for future GitHub event
+mining projects.
 \subsection{Determine Data Mining Goals (1.3)}
 
 \subsubsection*{Data Mining Goals}
@@ -124,22 +191,27 @@ The main project cost is analyst and engineering time required to acquire event 
 \subsubsection*{Project Plan}
 
 \begin{table}[H]
-\centering
-\small
-\caption{Project stages, activities, and outputs.}
-\begin{tabularx}{\textwidth}{lXXl}
-\toprule
-Stage & Key activities & Outputs & Est. time \\
-\midrule
-Data Understanding & Convert raw events, inspect event types and PR payloads & Event and PR summaries & 5 days \\
-Data Preparation & Extract PR lifecycles, construct target, build safe features & PR-level dataset & 10 days \\
-Modeling & Train baseline and stronger classifiers & Candidate models & 7 days \\
-Evaluation & Compare metrics, inspect ranking quality and limitations & Final conclusions & 5 days \\
-Deployment & Organize report, code, and recommended use scenario & Course deliverable & 3 days \\
-\bottomrule
-\end{tabularx}
+    \centering
+    \small
+    \caption{Project stages, activities, and outputs.}
+    \begin{tabularx}{\textwidth}{lXXl}
+        \toprule
+        Stage & Key activities & Outputs & Est. time \\
+        \midrule
+        Data Understanding & Convert raw events, inspect event types and PR payloads & Event and PR summaries
+        & 5 days \\
+        Data Preparation & Extract PR lifecycles, construct target, build safe features & PR-level dataset & 10 days \\
+        Modeling & Train baseline and stronger classifiers & Candidate models & 7 days \\
+        Evaluation & Compare metrics, inspect ranking quality and limitations & Final conclusions & 5 days \\
+        Deployment & Organize report, code, and recommended use scenario & Course deliverable & 3 days \\
+        \bottomrule
+    \end{tabularx}
 \end{table}
 
 \subsubsection*{Initial Assessment of Tools and Techniques}
 
-Polars was selected for event processing because the raw archive contains millions of JSON-line records and requires efficient columnar aggregation. Scikit-learn was selected for modeling because the task is tabular binary classification and the course objective emphasizes interpretable baselines and reproducible evaluation. Logistic regression was selected as a linear baseline, while random forest and histogram-based gradient boosting were selected as stronger non-linear alternatives.
+Polars was selected for event processing because the raw archive contains millions of JSON-line records and
+requires efficient columnar aggregation. Scikit-learn was selected for modeling because the task is tabular
+binary classification and the course objective emphasizes interpretable baselines and reproducible
+evaluation. Logistic regression was selected as a linear baseline, while random forest and histogram-based
+gradient boosting were selected as stronger non-linear alternatives.

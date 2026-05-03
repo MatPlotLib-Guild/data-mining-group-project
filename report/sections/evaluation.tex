@@ -1,113 +1,154 @@
 \clearpage
 \section{Evaluation (CRISP-DM Phase 5)}
 
-The evaluation phase connects the technical model assessment to the business objective of PR triage support. The project does not claim to reproduce maintainers' decisions causally. Instead, it evaluates whether public event features available at PR publication time can produce a useful ranking signal for merge likelihood and non-merge risk.
+The evaluation phase connects the technical model assessment to the business objective of PR triage support.
+The project does not claim to reproduce maintainers' decisions causally. Instead, it evaluates whether public
+event features available at PR publication time can produce a useful ranking signal for merge likelihood and
+non-merge risk.
 
 \subsection{Evaluate Results}
 
-The selected histogram-based gradient boosting model achieved ROC-AUC 0.7324 and PR-AUC 0.9360 on the held-out test set. This is a meaningful improvement over the majority-class baseline, which has ROC-AUC 0.5000 and PR-AUC 0.8574. The best model also reached precision@10\% of 0.9785 for the merge class, showing that the top-ranked merge candidates are merged at a substantially higher rate than the overall base merge rate.
+The selected histogram-based gradient boosting model achieved ROC-AUC 0.7324 and PR-AUC 0.9360 on the
+held-out test set. This is a meaningful improvement over the majority-class baseline, which has ROC-AUC
+0.5000 and PR-AUC 0.8574. The best model also reached precision@10\% of 0.9785 for the merge class, showing
+that the top-ranked merge candidates are merged at a substantially higher rate than the overall base merge rate.
 
-The default-threshold confusion matrix is shown in Table~\ref{tab:confusion_matrix}. It reveals an important limitation: the model is very strong at identifying merged PRs, but weak at recalling the non-merged class under the default threshold. This is expected because the positive class dominates the dataset.
+The default-threshold confusion matrix is shown in Table~\ref{tab:confusion_matrix}. It reveals an important
+limitation: the model is very strong at identifying merged PRs, but weak at recalling the non-merged class
+under the default threshold. This is expected because the positive class dominates the dataset.
 
 \begin{table}[H]
-\centering
-\caption{Confusion matrix for the selected model at the default threshold.}
-\label{tab:confusion_matrix}
-\begin{tabular}{lrr}
-\toprule
- & Predicted not merged & Predicted merged \\
-\midrule
-Actual not merged & 979 & 5,989 \\
-Actual merged & 139 & 41,750 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Confusion matrix for the selected model at the default threshold.}
+    \label{tab:confusion_matrix}
+    \begin{tabular}{lrr}
+        \toprule
+        & Predicted not merged & Predicted merged \\
+        \midrule
+        Actual not merged & 979 & 5,989 \\
+        Actual merged & 139 & 41,750 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-The detailed classification report shows precision 0.8757 and recall 0.1405 for the non-merged class, and precision 0.8745 and recall 0.9967 for the merged class. Therefore, the model should not be interpreted as a balanced hard classifier at threshold 0.5. Its more appropriate use is ranking and prioritization.
+The detailed classification report shows precision 0.8757 and recall 0.1405 for the non-merged class, and
+precision 0.8745 and recall 0.9967 for the merged class. Therefore, the model should not be interpreted as a
+balanced hard classifier at threshold 0.5. Its more appropriate use is ranking and prioritization.
 
-Figure~\ref{fig:predicted_probability_distribution} shows the predicted merge-probability distributions for merged and non-merged PRs. The classes are not cleanly separable. However, non-merged PRs have a heavier low-probability tail, which explains the model's useful risk-ranking behavior.
+Figure~\ref{fig:predicted_probability_distribution} shows the predicted merge-probability distributions for
+merged and non-merged PRs. The classes are not cleanly separable. However, non-merged PRs have a heavier
+low-probability tail, which explains the model's useful risk-ranking behavior.
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]{predicted_probability_distribution.png}
-\caption{Predicted merge probability distribution for merged and non-merged PRs.}
-\label{fig:predicted_probability_distribution}
+    \centering
+    \includegraphics[width=0.95\textwidth]{predicted_probability_distribution.png}
+    \caption{Predicted merge probability distribution for merged and non-merged PRs.}
+    \label{fig:predicted_probability_distribution}
 \end{figure}
 
-Because non-merged PRs are the rarer and more operationally interesting class, additional evaluation was performed using the risk score
+Because non-merged PRs are the rarer and more operationally interesting class, additional evaluation was
+performed using the risk score
 
 \[
-\text{risk score} = 1 - P(\text{merged}).
+    \text{risk score} = 1 - P(\text{merged}).
 \]
 
-Table~\ref{tab:risk_precision} shows that the model is effective at identifying the highest-risk PRs. The baseline non-merge rate is only 0.1426, but among the top 1\% highest-risk PRs, 0.9939 are actually non-merged. Even in the top 10\% highest-risk group, the non-merge precision is 0.4581, more than three times the baseline rate.
+Table~\ref{tab:risk_precision} shows that the model is effective at identifying the highest-risk PRs. The
+baseline non-merge rate is only 0.1426, but among the top 1\% highest-risk PRs, 0.9939 are actually
+non-merged. Even in the top 10\% highest-risk group, the non-merge precision is 0.4581, more than three times
+the baseline rate.
 
 \begin{table}[H]
-\centering
-\caption{Risk precision@k for identifying non-merged PRs.}
-\label{tab:risk_precision}
-\begin{tabular}{lrr}
-\toprule
-Risk-ranked subset & Non-merge precision & Baseline non-merge rate \\
-\midrule
-Top 1\% & 0.9939 & 0.1426 \\
-Top 5\% & 0.6257 & 0.1426 \\
-Top 10\% & 0.4581 & 0.1426 \\
-Top 20\% & 0.3325 & 0.1426 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Risk precision@k for identifying non-merged PRs.}
+    \label{tab:risk_precision}
+    \begin{tabular}{lrr}
+        \toprule
+        Risk-ranked subset & Non-merge precision & Baseline non-merge rate \\
+        \midrule
+        Top 1\% & 0.9939 & 0.1426 \\
+        Top 5\% & 0.6257 & 0.1426 \\
+        Top 10\% & 0.4581 & 0.1426 \\
+        Top 20\% & 0.3325 & 0.1426 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-Threshold analysis further supports this interpretation. Table~\ref{tab:risk_thresholds} shows that increasing the risk threshold gives higher precision but lower recall. For example, at risk threshold 0.2, the model flags 15.0\% of PRs, with non-merge precision 0.3827 and recall 0.4028. At threshold 0.5, it flags 2.3\% of PRs, with precision 0.8757 but recall 0.1405.
+Threshold analysis further supports this interpretation. Table~\ref{tab:risk_thresholds} shows that
+increasing the risk threshold gives higher precision but lower recall. For example, at risk threshold 0.2,
+the model flags 15.0\% of PRs, with non-merge precision 0.3827 and recall 0.4028. At threshold 0.5, it flags
+2.3\% of PRs, with precision 0.8757 but recall 0.1405.
 
 \begin{table}[H]
-\centering
-\caption{Selected risk-threshold operating points.}
-\label{tab:risk_thresholds}
-\begin{tabular}{rrrrr}
-\toprule
-Risk threshold & Flagged share & Precision & Recall & F1 \\
-\midrule
-0.10 & 0.6659 & 0.1876 & 0.8760 & 0.3091 \\
-0.20 & 0.1501 & 0.3827 & 0.4028 & 0.3925 \\
-0.50 & 0.0229 & 0.8757 & 0.1405 & 0.2421 \\
-0.90 & 0.0083 & 1.0000 & 0.0584 & 0.1104 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Selected risk-threshold operating points.}
+    \label{tab:risk_thresholds}
+    \begin{tabular}{rrrrr}
+        \toprule
+        Risk threshold & Flagged share & Precision & Recall & F1 \\
+        \midrule
+        0.10 & 0.6659 & 0.1876 & 0.8760 & 0.3091 \\
+        0.20 & 0.1501 & 0.3827 & 0.4028 & 0.3925 \\
+        0.50 & 0.0229 & 0.8757 & 0.1405 & 0.2421 \\
+        0.90 & 0.0083 & 1.0000 & 0.0584 & 0.1104 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-The business interpretation is therefore clear: the model is not a universal automatic decision system, but it is useful as a prioritization tool. It can surface a small subset of PRs that are unusually likely to remain unmerged, which could help maintainers inspect blocked, low-fit, or potentially problematic contributions earlier.
+The business interpretation is therefore clear: the model is not a universal automatic decision system, but
+it is useful as a prioritization tool. It can surface a small subset of PRs that are unusually likely to
+remain unmerged, which could help maintainers inspect blocked, low-fit, or potentially problematic
+contributions earlier.
 
 \subsection{Review Process}
 
-The project followed the intended CRISP-DM logic, but the actual work was necessarily data-driven. The main technical uncertainty was whether GH Archive payloads contained enough information to construct PR lifecycles and reliable merge labels. Data understanding confirmed that \texttt{PullRequestEvent} contained both opening and closure actions and that closed PR payloads contained the merge label.
+The project followed the intended CRISP-DM logic, but the actual work was necessarily data-driven. The main
+technical uncertainty was whether GH Archive payloads contained enough information to construct PR lifecycles
+and reliable merge labels. Data understanding confirmed that \texttt{PullRequestEvent} contained both opening
+and closure actions and that closed PR payloads contained the merge label.
 
-The strongest process decision was to define the analytical grain as one row per pull request. This made the target, features, and business interpretation consistent. The second important decision was to enforce a leakage-aware feature policy: all closure-time fields and same-day future events were excluded from the feature matrix. The third important decision was to evaluate the model as a ranking tool, not only as a hard classifier.
+The strongest process decision was to define the analytical grain as one row per pull request. This made the
+target, features, and business interpretation consistent. The second important decision was to enforce a
+leakage-aware feature policy: all closure-time fields and same-day future events were excluded from the
+feature matrix. The third important decision was to evaluate the model as a ranking tool, not only as a hard classifier.
 
 Several limitations remain:
 
 \begin{itemize}
     \item \textbf{Window limitation.} The model uses only PRs opened and closed within the downloaded archive window.
     \item \textbf{Left-censoring.} Repository and actor history are incomplete at the beginning of the sample.
-    \item \textbf{Public-data limitation.} Private discussions, CI results, review decisions, and maintainers' subjective reasoning are not available.
-    \item \textbf{Class imbalance.} Most observed PRs are merged, so default-threshold classification is biased toward the positive class.
-    \item \textbf{Causal limitation.} The model identifies predictive associations but does not prove why maintainers merge or reject PRs.
+    \item \textbf{Public-data limitation.} Private discussions, CI results, review decisions, and
+        maintainers' subjective reasoning are not available.
+    \item \textbf{Class imbalance.} Most observed PRs are merged, so default-threshold classification is
+        biased toward the positive class.
+    \item \textbf{Causal limitation.} The model identifies predictive associations but does not prove why
+        maintainers merge or reject PRs.
 \end{itemize}
 
-No major omitted step invalidates the current results. The most important limitation is scope: the model should be presented as a proof-of-concept ranking model for PR outcome risk, not as a production-ready maintainer decision system.
+No major omitted step invalidates the current results. The most important limitation is scope: the model
+should be presented as a proof-of-concept ranking model for PR outcome risk, not as a production-ready
+maintainer decision system.
 
 \subsection{Determine Next Steps}
 
-The current model is approved as an analytical result because it improves over the baseline and provides strong risk-ranking signal. It should not be deployed as an automated decision-maker.
+The current model is approved as an analytical result because it improves over the baseline and provides
+strong risk-ranking signal. It should not be deployed as an automated decision-maker.
 
 Possible continuations are:
 
 \begin{enumerate}
-    \item \textbf{Use a longer archive window.} This would reduce lifecycle truncation and improve repository/actor history quality.
-    \item \textbf{Use exact timestamp history.} Instead of previous-day aggregation, features could use rolling windows ending exactly at PR opening time.
-    \item \textbf{Add early interaction features.} A second scenario could predict after the first 6 or 24 hours of activity, using comments and reviews after publication but before final closure.
-    \item \textbf{Apply time-based validation.} Training on earlier days and testing on later days would better approximate deployment.
-    \item \textbf{Connect to richer GitHub data.} Review comments, CI statuses, labels, file types, and textual PR descriptions could improve explanatory power.
+    \item \textbf{Use a longer archive window.} This would reduce lifecycle truncation and improve
+        repository/actor history quality.
+    \item \textbf{Use exact timestamp history.} Instead of previous-day aggregation, features could use
+        rolling windows ending exactly at PR opening time.
+    \item \textbf{Add early interaction features.} A second scenario could predict after the first 6 or 24
+        hours of activity, using comments and reviews after publication but before final closure.
+    \item \textbf{Apply time-based validation.} Training on earlier days and testing on later days would
+        better approximate deployment.
+    \item \textbf{Connect to richer GitHub data.} Review comments, CI statuses, labels, file types, and
+        textual PR descriptions could improve explanatory power.
 \end{enumerate}
 
-The selected decision is to proceed with the current report as the final course deliverable. The model is useful for ranking PR merge outcomes under a controlled leakage-aware setup, while the limitations are explicit enough to avoid overstating the result.
+The selected decision is to proceed with the current report as the final course deliverable. The model is
+useful for ranking PR merge outcomes under a controlled leakage-aware setup, while the limitations are
+explicit enough to avoid overstating the result.

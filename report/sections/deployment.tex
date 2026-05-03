@@ -1,11 +1,16 @@
 \clearpage
 \section{Deployment (CRISP-DM Phase 6)}
 
-The project does not include production deployment. In this course setting, deployment means organizing the analytical result, code, figures, and conclusions in a form that can be reviewed and reused. This is consistent with a report-based deployment scenario: the model is not embedded into a live GitHub workflow, but the result is presented as a reproducible decision-support analysis.
+The project does not include production deployment. In this course setting, deployment means organizing the
+analytical result, code, figures, and conclusions in a form that can be reviewed and reused. This is
+consistent with a report-based deployment scenario: the model is not embedded into a live GitHub workflow,
+but the result is presented as a reproducible decision-support analysis.
 
 \subsection{Plan Deployment}
 
-The recommended deployment is analytical and report-based rather than automatic operational deployment. The model should be used as a decision-support tool for ranking newly opened pull requests by merge likelihood or non-merge risk. A possible operational scenario is a maintainer dashboard that displays:
+The recommended deployment is analytical and report-based rather than automatic operational deployment. The
+model should be used as a decision-support tool for ranking newly opened pull requests by merge likelihood or
+non-merge risk. A possible operational scenario is a maintainer dashboard that displays:
 
 \begin{itemize}
     \item a predicted merge probability;
@@ -14,38 +19,52 @@ The recommended deployment is analytical and report-based rather than automatic 
     \item warnings about data limitations and model scope.
 \end{itemize}
 
-The model must not be used to automatically reject, hide, or deprioritize contributors. Its output should support human triage, not replace maintainer judgment. The safest practical use is to surface potentially blocked or low-fit PRs for earlier inspection.
+The model must not be used to automatically reject, hide, or deprioritize contributors. Its output should
+support human triage, not replace maintainer judgment. The safest practical use is to surface potentially
+blocked or low-fit PRs for earlier inspection.
 
 \subsection{Plan Monitoring and Maintenance}
 
-If the approach were used beyond the course setting, monitoring would be required. The following issues should be tracked:
+If the approach were used beyond the course setting, monitoring would be required. The following issues
+should be tracked:
 
 \begin{itemize}
     \item \textbf{Data drift:} GitHub workflows, repository practices, and contributor behavior can change over time.
     \item \textbf{Schema drift:} event payload fields may change or become unavailable.
     \item \textbf{Target drift:} the base merge rate can vary by time period, repository type, and project maturity.
-    \item \textbf{Performance drift:} ROC-AUC, PR-AUC, and risk precision@k should be recalculated on newer time windows.
-    \item \textbf{Ethical use:} the score should be monitored to ensure that it does not become an automatic gatekeeping mechanism against contributors.
+    \item \textbf{Performance drift:} ROC-AUC, PR-AUC, and risk precision@k should be recalculated on newer
+        time windows.
+    \item \textbf{Ethical use:} the score should be monitored to ensure that it does not become an automatic
+        gatekeeping mechanism against contributors.
 \end{itemize}
 
-A production version should retrain the model on newer and longer archive windows, evaluate with time-based validation, and validate feature extraction after any schema changes. If risk precision drops close to the baseline non-merge rate, the model should be disabled or retrained.
+A production version should retrain the model on newer and longer archive windows, evaluate with time-based
+validation, and validate feature extraction after any schema changes. If risk precision drops close to the
+baseline non-merge rate, the model should be disabled or retrained.
 
 \subsection{Produce Final Report}
 
-The final deliverable of this project is the written CRISP-DM report together with the accompanying code notebooks and generated artifacts. The report summarizes the business objective, data understanding, data preparation pipeline, model comparison, evaluation results, limitations, and recommended next steps.
+The final deliverable of this project is the written CRISP-DM report together with the accompanying code
+notebooks and generated artifacts. The report summarizes the business objective, data understanding, data
+preparation pipeline, model comparison, evaluation results, limitations, and recommended next steps.
 
-The final presentation and video are handled separately by the project team. They should present the same central conclusion as the report: public event data available at PR publication time contains useful ranking signal, but the model should be treated as a triage-support tool rather than an automatic decision system.
+The final presentation and video are handled separately by the project team. They should present the same
+central conclusion as the report: public event data available at PR publication time contains useful ranking
+signal, but the model should be treated as a triage-support tool rather than an automatic decision system.
 
 \subsection{Review Project}
 
-The project successfully produced a leakage-aware PR-level dataset and a ranking model that improves over the majority-class baseline. The main lessons are:
+The project successfully produced a leakage-aware PR-level dataset and a ranking model that improves over the
+majority-class baseline. The main lessons are:
 
 \begin{itemize}
-    \item GH Archive is suitable for event-level workflow mining, but the observation window strongly affects lifecycle completeness.
+    \item GH Archive is suitable for event-level workflow mining, but the observation window strongly affects
+        lifecycle completeness.
     \item PR merge prediction is heavily imbalanced because most observed PRs are merged.
     \item Default-threshold classification is less informative than ranking-based evaluation for this task.
     \item Repository and contributor history features provide stronger signal than raw PR size alone.
     \item The result is useful for prioritization, but not sufficient for automated maintainer decisions.
 \end{itemize}
 
-The main improvement for future versions is to use a longer time range and exact timestamp-based historical windows. This would reduce left-censoring and approximate a real deployment setting more closely.
+The main improvement for future versions is to use a longer time range and exact timestamp-based historical
+windows. This would reduce left-censoring and approximate a real deployment setting more closely.

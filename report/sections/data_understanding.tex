@@ -3,13 +3,19 @@
 
 \subsection{Collect Initial Data (2.1)}
 
-The initial data consisted of hourly GH Archive files downloaded for a continuous July 2015 window. Each raw file is a compressed JSON-lines archive of public GitHub events. Because the raw records are nested and event-type specific, they were converted into a flat analytical event table with common top-level fields and the original event payload preserved as JSON text.
+The initial data consisted of hourly GH Archive files downloaded for a continuous July 2015 window. Each raw
+file is a compressed JSON-lines archive of public GitHub events. Because the raw records are nested and
+event-type specific, they were converted into a flat analytical event table with common top-level fields and
+the original event payload preserved as JSON text.
 
-The converted event table contains 9,269,533 events. The common fields retained for inspection were event identifier, event type, timestamp, actor identifier and login, repository identifier and name, optional organization information, and the original event payload.
+The converted event table contains 9,269,533 events. The common fields retained for inspection were event
+identifier, event type, timestamp, actor identifier and login, repository identifier and name, optional
+organization information, and the original event payload.
 
 \subsection{Describe Data (2.2)}
 
-The dataset is an event stream rather than a conventional relational database. Each row represents one public GitHub event. The main fields used during inspection were:
+The dataset is an event stream rather than a conventional relational database. Each row represents one public
+GitHub event. The main fields used during inspection were:
 
 \begin{itemize}
     \item event identifier;
@@ -20,93 +26,108 @@ The dataset is an event stream rather than a conventional relational database. E
     \item event-specific payload.
 \end{itemize}
 
-The sample contains 14 distinct event types. Table~\ref{tab:event_types} summarizes the most frequent event types observed during inspection.
+The sample contains 14 distinct event types. Table~\ref{tab:event_types} summarizes the most frequent event
+types observed during inspection.
 
 \begin{table}[H]
-\centering
-\caption{Main event types in the converted GH Archive sample.}
-\label{tab:event_types}
-\begin{tabular}{lr}
-\toprule
-Event type & Count \\
-\midrule
-\texttt{PushEvent} & 4,417,737 \\
-\texttt{CreateEvent} & 1,329,287 \\
-\texttt{IssueCommentEvent} & 886,068 \\
-\texttt{WatchEvent} & 826,509 \\
-\texttt{PullRequestEvent} & 470,260 \\
-Other event types & 1,339,672 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Main event types in the converted GH Archive sample.}
+    \label{tab:event_types}
+    \begin{tabular}{lr}
+        \toprule
+        Event type & Count \\
+        \midrule
+        \texttt{PushEvent} & 4,417,737 \\
+        \texttt{CreateEvent} & 1,329,287 \\
+        \texttt{IssueCommentEvent} & 886,068 \\
+        \texttt{WatchEvent} & 826,509 \\
+        \texttt{PullRequestEvent} & 470,260 \\
+        Other event types & 1,339,672 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-The project focuses on \texttt{PullRequestEvent}, because it contains both PR opening and PR closure actions. The PR subset contains 470,260 event rows.
+The project focuses on \texttt{PullRequestEvent}, because it contains both PR opening and PR closure actions.
+The PR subset contains 470,260 event rows.
 
 \subsection{Explore Data (2.3)}
 
-The first exploration step checked the action distribution within \texttt{PullRequestEvent}. Table~\ref{tab:pr_actions} shows that the sample contains enough opened and closed PR actions for supervised learning.
+The first exploration step checked the action distribution within \texttt{PullRequestEvent}.
+Table~\ref{tab:pr_actions} shows that the sample contains enough opened and closed PR actions for supervised learning.
 
 \begin{table}[H]
-\centering
-\caption{Pull request event actions.}
-\label{tab:pr_actions}
-\begin{tabular}{lr}
-\toprule
-Action & Count \\
-\midrule
-\texttt{opened} & 238,541 \\
-\texttt{closed} & 228,072 \\
-\texttt{reopened} & 3,647 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Pull request event actions.}
+    \label{tab:pr_actions}
+    \begin{tabular}{lr}
+        \toprule
+        Action & Count \\
+        \midrule
+        \texttt{opened} & 238,541 \\
+        \texttt{closed} & 228,072 \\
+        \texttt{reopened} & 3,647 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-The second exploration step checked whether closed PR events contain the merge label. Closed PR events include \texttt{pull\_request.merged}, allowing the project to distinguish merged PRs from closed-but-unmerged PRs. Table~\ref{tab:merge_labels} shows the observed target distribution among closed PR events.
+The second exploration step checked whether closed PR events contain the merge label. Closed PR events
+include \texttt{pull\_request.merged}, allowing the project to distinguish merged PRs from
+closed-but-unmerged PRs. Table~\ref{tab:merge_labels} shows the observed target distribution among closed PR events.
 
 \begin{table}[H]
-\centering
-\caption{Merge label distribution in closed PR events.}
-\label{tab:merge_labels}
-\begin{tabular}{lr}
-\toprule
-Closed PR label & Count \\
-\midrule
-Merged & 186,811 \\
-Not merged & 41,261 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Merge label distribution in closed PR events.}
+    \label{tab:merge_labels}
+    \begin{tabular}{lr}
+        \toprule
+        Closed PR label & Count \\
+        \midrule
+        Merged & 186,811 \\
+        Not merged & 41,261 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
-Finally, PR lifecycle coverage was checked by grouping PR events by PR identifier. The inspection found 268,072 unique PR identifiers in opened/closed events, including 195,611 PRs with both an opening and a closing event observed in the downloaded data. This confirmed that a supervised lifecycle table could be constructed.
+Finally, PR lifecycle coverage was checked by grouping PR events by PR identifier. The inspection found
+268,072 unique PR identifiers in opened/closed events, including 195,611 PRs with both an opening and a
+closing event observed in the downloaded data. This confirmed that a supervised lifecycle table could be constructed.
 
 \subsection{Verify Data Quality (2.4)}
 
-The main data quality issue is not missing tabular values in the usual sense, but event-stream completeness and payload consistency. Several checks were performed:
+The main data quality issue is not missing tabular values in the usual sense, but event-stream completeness
+and payload consistency. Several checks were performed:
 
 \begin{itemize}
-    \item \textbf{Identifier availability.} PR identifiers, repository identifiers, and PR numbers were available in the relevant PR payloads.
+    \item \textbf{Identifier availability.} PR identifiers, repository identifiers, and PR numbers were
+        available in the relevant PR payloads.
     \item \textbf{Label availability.} The merge label was available for closed PR events.
-    \item \textbf{Lifecycle validity.} Only PRs with an observed opening and a later observed closing event were retained for the supervised dataset.
-    \item \textbf{Payload variability.} Some modern GitHub fields were absent or uninformative in the 2015 archive sample. In particular, the extracted author association field was constant after extraction and was not used for modeling.
-    \item \textbf{Temporal leakage.} Closure-time fields were kept for target construction and diagnostics, but excluded from the model feature matrix.
+    \item \textbf{Lifecycle validity.} Only PRs with an observed opening and a later observed closing event
+        were retained for the supervised dataset.
+    \item \textbf{Payload variability.} Some modern GitHub fields were absent or uninformative in the 2015
+        archive sample. In particular, the extracted author association field was constant after extraction
+        and was not used for modeling.
+    \item \textbf{Temporal leakage.} Closure-time fields were kept for target construction and diagnostics,
+        but excluded from the model feature matrix.
 \end{itemize}
 
 \begin{table}[H]
-\centering
-\caption{Summary of data quality checks.}
-\label{tab:data_quality_summary}
-\begin{tabularx}{\textwidth}{lXX}
-\toprule
-Check & Status & Notes \\
-\midrule
-Event volume & Valid & 9,269,533 events after conversion. \\
-PR event availability & Valid & 470,260 \texttt{PullRequestEvent} records. \\
-Lifecycle coverage & Valid with restriction & 195,425 usable PR-level records after lifecycle filtering. \\
-Merge label & Valid & Available in closed PR payloads. \\
-Author association & Not useful & Constant in the final table. \\
-Temporal leakage & Controlled & Same-day future activity and closure-time information were excluded from features. \\
-\bottomrule
-\end{tabularx}
+    \centering
+    \caption{Summary of data quality checks.}
+    \label{tab:data_quality_summary}
+    \begin{tabularx}{\textwidth}{lXX}
+        \toprule
+        Check & Status & Notes \\
+        \midrule
+        Event volume & Valid & 9,269,533 events after conversion. \\
+        PR event availability & Valid & 470,260 \texttt{PullRequestEvent} records. \\
+        Lifecycle coverage & Valid with restriction & 195,425 usable PR-level records after lifecycle filtering. \\
+        Merge label & Valid & Available in closed PR payloads. \\
+        Author association & Not useful & Constant in the final table. \\
+        Temporal leakage & Controlled & Same-day future activity and closure-time information were excluded
+        from features. \\
+        \bottomrule
+    \end{tabularx}
 \end{table}
 
-The data was considered suitable for modeling after reducing the event stream to clean PR lifecycle records and constructing features using only opening-time and previous-day information.
+The data was considered suitable for modeling after reducing the event stream to clean PR lifecycle records
+and constructing features using only opening-time and previous-day information.
