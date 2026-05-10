@@ -1,0 +1,150 @@
+{
+  "stability": 0.5,
+  "language_code": "auto",
+  "dialogue": [
+    {
+      "text": "[confidently] Good afternoon. Our Cross-Industry Standard Process for Data Mining project predicts pull request merge outcomes from public GitHub events.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[friendly] My name is Nikita, and I led the modeling side of this project.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[friendly] And my name is Dmitry. I was responsible for the business framing. Our data source is the GitHub Archive — over nine million public events from July of 2015. We will walk you through all six phases in about twelve minutes.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[curiously] One question: can public GitHub events predict whether a pull request gets merged?",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[matter-of-factly] We parsed nine point two seven million events down to one hundred ninety-five thousand clean pull request lifecycles. Best Receiver Operating Characteristic Area Under Curve: zero point seven three. And at the top one percent of risk-ranked pull requests, non-merge precision is zero point nine nine.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[emphatically] So this is a triage tool, not an automated decision system. That distinction matters.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[informatively] We followed the methodology strictly. Six phases: Business Understanding, Data Understanding, Data Preparation, Modeling, Evaluation, and Deployment.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[casually] Our stack: Python, Polars, and scikit-learn. Estimated cost: about six hundred eighty-eight dollars over one hundred thirty hours.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[announcing] Phase one. Business Understanding.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[thoughtfully] Maintainers drown in pull requests. Contributors guess at the rules. Our goal is to rank newly opened pull requests by merge likelihood — before a maintainer spends a single minute on them.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[matter-of-factly] We had five data-mining goals: build a supervised dataset, predict merge probability, compare model families, find the strongest pre-opening signals, and stay leakage-compliant.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[pragmatically] At five hundred pull requests a month, a ten percent triage saving recovers about one thousand five hundred dollars per maintainer per year.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[announcing] Phase two. Data Understanding.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[explanatorily] We flattened hourly archives into one analytical table, with the original payloads preserved.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[informatively] Half of the events are pushes. The pull request event slice — four hundred seventy thousand records — gives us two hundred thirty-eight thousand opened and two hundred twenty-eight thousand closed actions. Enough for supervised learning.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[carefully] The merge label is in every closed payload. Author-association was constant, so we dropped it. Closure-time fields are diagnostics only — never inputs to the model.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[announcing] Phase three. Data Preparation.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[focused] This is the analytical backbone of the project. Five steps.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[methodically] Select pull requests with valid open and close events. Clean by timestamp. Construct the binary target — merge rate is zero point eight six, heavily imbalanced.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[continuing] Integrate opening metadata, closure diagnostics, and previous-day repository and actor history. Format twenty-six features over one hundred ninety-five thousand rows.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[emphatically] Leakage rule: every event from a pull request's opening date is excluded from its history features. That is what leakage-aware means.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[announcing] Phase four. Modeling.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[explanatorily] Four model families, same features, stratified seventy-five twenty-five split. Histogram Gradient Boosting wins at zero point seven three, just ahead of Random Forest. Logistic Regression at zero point six five. Dummy at zero point five.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[cautiously] The F-one score misleads under a zero point eight six base rate — so we lead with Receiver Operating Characteristic and Precision-Recall Area Under Curve.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[intrigued] Permutation importance: the top features aren't pull request size — they're repository workflow context. Push events, contributor activity days, issue-comment share. Context beats diff size.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[announcing] Phase five. Evaluation.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[explaining] The probability distributions overlap — but non-merged pull requests carry a heavier low-probability tail. That tail is what the model exploits.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[impressed] Baseline non-merge rate is fourteen percent. In the top one percent of risk, non-merge precision is ninety-nine percent — seven times baseline. In the top ten percent, still over three times baseline.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[emphatically] Not a hard classifier — a risk-ranking instrument. At the top, almost surgical.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[announcing] Phase six. Deployment.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[seriously] No live integration. We recommend a maintainer dashboard: show merge probability, risk score, and feature groups, with limitations on screen.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[firmly] It must never auto-reject, hide, or deprioritize a contributor. Ethical guardrail, not a feature flag.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[reflectively] What we proved: public pre-opening signals carry useful ranking signal. What is still open: a longer window, exact-timestamp history, early-interaction features, and time-based validation.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[concluding] Proof-of-concept ranking model. Useful for prioritization. Insufficient for automation.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    },
+    {
+      "text": "[warmly] Thank you.",
+      "voice": "YOq2y2Up4RgXP2HyXjE5"
+    },
+    {
+      "text": "[inviting] Happy to take questions — pipeline, leakage, modeling, or deployment scope.",
+      "voice": "Tsns2HvNFKfGiNjllgqo"
+    }
+  ]
+}

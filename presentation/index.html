@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CRISP-DM — PR Merge Outcome Prediction</title>
+<link rel="stylesheet" media="print" href="print.css" />
+<style>
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-Light-BF67243fd502239.otf") format("opentype"); font-weight:300; font-style:normal; font-display:block; }
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-Regular-BF67243fd53fdf2.otf") format("opentype"); font-weight:400; font-style:normal; font-display:block; }
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-Medium-BF67243fd53e059.otf") format("opentype"); font-weight:500; font-style:normal; font-display:block; }
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-SemiBold-BF67243fd54213d.otf") format("opentype"); font-weight:600; font-style:normal; font-display:block; }
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-Bold-BF67243fd540abb.otf") format("opentype"); font-weight:700; font-style:normal; font-display:block; }
+  @font-face { font-family:"Roobert"; src:url("fonts/Roobert-Heavy-BF67243fd53e164.otf") format("opentype"); font-weight:900; font-style:normal; font-display:block; }
+  @font-face { font-family:"RoobertMono"; src:url("fonts/RoobertMono-Regular-BF67243fd29a433.otf") format("opentype"); font-weight:400; font-display:block; }
+  @font-face { font-family:"RoobertMono"; src:url("fonts/RoobertMono-Medium-BF67243fd28915a.otf") format("opentype"); font-weight:500; font-display:block; }
+  @font-face { font-family:"RoobertMono"; src:url("fonts/RoobertMono-Bold-BF67243fd2cfa56.otf") format("opentype"); font-weight:700; font-display:block; }
+
+  :root{
+    --ink:#0a0a0a;
+    --paper:#f4f2ee;
+    --rule:#0a0a0a;
+    --muted:#6b6b6b;
+    --hair:1px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:#1a1a1a; font-family:"Roobert", sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  /* Slide = exactly one printed page, 16:9 at 1600x900 */
+  .slide{
+    position:relative;
+    width:1600px; height:900px;
+    background:var(--paper);
+    color:var(--ink);
+    overflow:hidden;
+    page-break-after:always;
+    break-after:page;
+    margin:24px auto;
+    box-shadow:0 30px 60px rgba(0,0,0,.4);
+  }
+  .slide:last-child{ page-break-after:auto; break-after:auto; }
+
+  /* Subtle paper grain */
+  .slide::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(rgba(0,0,0,.045) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,.025) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    mix-blend-mode:multiply;
+    pointer-events:none;
+    opacity:.55;
+  }
+
+  /* Frame chrome shared by content slides */
+  .chrome{
+    position:absolute; inset:48px;
+    border-top:var(--hair) solid var(--ink);
+    border-bottom:var(--hair) solid var(--ink);
+    pointer-events:none;
+  }
+  .chrome::before, .chrome::after{
+    content:""; position:absolute; left:0; right:0; height:var(--hair); background:var(--ink);
+  }
+  .chrome::before{ top:34px; }
+  .chrome::after{ bottom:34px; opacity:.3; }
+
+  .crown{
+    position:absolute; top:60px; left:64px; right:64px;
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:"RoobertMono"; font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink);
+  }
+  .crown .dot{ display:inline-block; width:7px; height:7px; background:var(--ink); border-radius:50%; transform:translateY(-1px); margin:0 10px; }
+  .crown .right{ color:var(--muted); }
+
+  .footer{
+    position:absolute; bottom:60px; left:64px; right:64px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:"RoobertMono"; font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .footer .pg{ color:var(--ink); font-weight:500; }
+
+  .body{
+    position:absolute; left:64px; right:64px; top:120px; bottom:120px;
+  }
+
+  /* Typography */
+  .display{
+    font-weight:900;
+    line-height:.86;
+    letter-spacing:-.045em;
+    font-size:200px;
+  }
+  .h1{ font-weight:700; font-size:96px; line-height:.92; letter-spacing:-.035em; }
+  .h2{ font-weight:600; font-size:54px; line-height:1; letter-spacing:-.02em; }
+  .h3{ font-weight:600; font-size:30px; line-height:1.15; letter-spacing:-.005em; }
+  .lead{ font-weight:400; font-size:22px; line-height:1.45; max-width:840px; }
+  .body-text{ font-weight:400; font-size:18px; line-height:1.55; }
+  .small{ font-weight:400; font-size:14px; line-height:1.5; color:var(--muted); }
+  .mono{ font-family:"RoobertMono"; }
+  .upper{ text-transform:uppercase; letter-spacing:.18em; }
+  .ink-invert{ color:var(--paper); }
+
+  /* utilities */
+  .grid{ display:grid; gap:32px; }
+  .col-2{ grid-template-columns:1fr 1fr; }
+  .col-3{ grid-template-columns:repeat(3,1fr); }
+  .col-4{ grid-template-columns:repeat(4,1fr); }
+  .v-end{ align-self:end; }
+
+  hr.rule{ border:0; border-top:1px solid var(--ink); margin:0; }
+
+  /* Number stamps */
+  .stamp{
+    font-family:"RoobertMono"; font-size:12px; letter-spacing:.2em; text-transform:uppercase;
+    display:inline-block; padding:6px 10px; border:1px solid var(--ink); color:var(--ink);
+  }
+  .stamp.solid{ background:var(--ink); color:var(--paper); }
+
+  /* Stat block */
+  .stat{ }
+  .stat .num{ font-weight:900; font-size:120px; line-height:.85; letter-spacing:-.04em; }
+  .stat .lab{ font-family:"RoobertMono"; font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-top:14px; }
+
+  /* Lists */
+  ul.list{ list-style:none; padding:0; margin:0; }
+  ul.list li{ padding:14px 0; border-bottom:1px solid rgba(10,10,10,.18); display:flex; gap:18px; align-items:baseline; }
+  ul.list li:last-child{ border-bottom:none; }
+  ul.list li .k{ font-family:"RoobertMono"; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); min-width:64px; }
+  ul.list li .v{ font-size:20px; font-weight:500; line-height:1.3; flex:1; }
+
+  /* Tables */
+  table.tbl{ width:100%; border-collapse:collapse; font-size:18px; }
+  table.tbl th, table.tbl td{ text-align:left; padding:14px 12px; border-bottom:1px solid rgba(10,10,10,.2); }
+  table.tbl th{ font-family:"RoobertMono"; font-weight:500; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--ink); }
+  table.tbl td.num, table.tbl th.num{ text-align:right; font-family:"RoobertMono"; }
+  tr.hl td{ background:var(--ink); color:var(--paper); }
+  tr.hl td.num{ color:var(--paper); }
+
+  /* Title slide bespoke */
+  .title-slide{ background:var(--paper); }
+  .title-slide .megamark{
+    position:absolute; right:-180px; top:-180px; width:620px; height:620px;
+    border-radius:50%; background:var(--ink);
+  }
+  .title-slide .ring{
+    position:absolute; right:-60px; top:-60px; width:380px; height:380px;
+    border-radius:50%; border:1px solid rgba(244,242,238,.25);
+  }
+  .title-slide .ring2{
+    position:absolute; right:30px; top:30px; width:200px; height:200px;
+    border-radius:50%; border:1px solid rgba(244,242,238,.4);
+  }
+  .title-slide .dot{
+    position:absolute; right:120px; top:120px; width:8px; height:8px; border-radius:50%; background:var(--paper);
+  }
+  .title-slide .meta-bar{
+    position:absolute; left:64px; right:64px; top:64px;
+    display:flex; justify-content:space-between;
+    font-family:"RoobertMono"; font-size:13px; letter-spacing:.2em; text-transform:uppercase;
+    z-index:2;
+  }
+  .title-slide .meta-bar > span:last-child{ color:var(--paper); }
+  .title-slide .title-block{
+    position:absolute; left:64px; right:64px; top:200px;
+    z-index:2;
+  }
+  .title-slide .kicker{
+    font-family:"RoobertMono"; font-size:14px; letter-spacing:.28em; text-transform:uppercase; margin-bottom:28px;
+    display:flex; gap:18px; align-items:center;
+  }
+  .title-slide .kicker .bar{ display:inline-block; width:48px; height:1px; background:var(--ink); }
+  .title-slide h1{
+    font-weight:900; font-size:148px; line-height:.86; letter-spacing:-.045em;
+    max-width:1380px;
+  }
+  .title-slide h1 em{ font-style:normal; font-weight:300; font-family:"Roobert"; letter-spacing:-.02em; }
+  .title-slide .authors{
+    position:absolute; left:64px; bottom:64px; right:64px;
+    display:flex; justify-content:space-between; align-items:flex-end;
+    font-family:"RoobertMono"; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+  }
+  .title-slide .authors .a{ display:flex; flex-direction:column; gap:6px; }
+  .title-slide .authors .a strong{ font-weight:700; color:var(--ink); }
+  .title-slide .authors .a span{ color:var(--muted); }
+
+  /* Section divider slide */
+  .divider{
+    background:var(--ink); color:var(--paper);
+  }
+  .divider::before{
+    background-image:
+      radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
+  }
+  .divider .crown, .divider .footer{ color:rgba(244,242,238,.7); }
+  .divider .crown .dot{ background:var(--paper); }
+  .divider .footer .pg{ color:var(--paper); }
+  .divider .stamp{ border-color:var(--paper); color:var(--paper); }
+  .divider .chrome{ border-color:rgba(244,242,238,.5); }
+  .divider .chrome::before{ background:rgba(244,242,238,.5); }
+  .divider .chrome::after{ background:rgba(244,242,238,.2); }
+  .divider .phase-num{
+    font-weight:900; font-size:440px; line-height:.82; letter-spacing:-.06em;
+  }
+  .divider .phase-name{
+    font-weight:700; font-size:88px; line-height:.92; letter-spacing:-.03em;
+    margin-top:8px;
+  }
+  .divider .phase-sub{
+    font-family:"RoobertMono"; font-size:16px; letter-spacing:.25em; text-transform:uppercase;
+    color:rgba(244,242,238,.7); margin-top:36px; max-width:780px; line-height:1.6;
+  }
+
+  /* Badge tag */
+  .tag{ display:inline-block; font-family:"RoobertMono"; font-size:11px; letter-spacing:.22em; text-transform:uppercase; padding:5px 9px; border:1px solid var(--ink); color:var(--ink); margin-right:6px; }
+
+  /* Image card */
+  .figcard{ background:#fff; border:1px solid var(--ink); padding:18px; }
+  .figcard img{ display:block; width:100%; height:auto; }
+  .figcap{ font-family:"RoobertMono"; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:14px; }
+
+  /* Bar / process */
+  .bar-row{ display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid rgba(10,10,10,.18); }
+  .bar-row:last-child{ border-bottom:none; }
+  .bar-row .name{ width:340px; font-weight:600; font-size:16px; }
+  .bar-row .bar{ flex:1; height:18px; background:rgba(10,10,10,.07); position:relative; }
+  .bar-row .bar i{ display:block; height:100%; background:var(--ink); }
+  .bar-row .val{ width:120px; text-align:right; font-family:"RoobertMono"; font-size:14px; }
+
+  /* Process train */
+  .train{ display:grid; grid-template-columns:repeat(6,1fr); gap:0; border:1px solid var(--ink); }
+  .train .step{ padding:22px 18px; border-right:1px solid var(--ink); position:relative; min-height:200px; display:flex; flex-direction:column; justify-content:space-between; }
+  .train .step:last-child{ border-right:none; }
+  .train .step .n{ font-family:"RoobertMono"; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+  .train .step .t{ font-weight:700; font-size:22px; line-height:1.05; letter-spacing:-.01em; }
+  .train .step .d{ font-size:13px; color:var(--muted); line-height:1.4; }
+  .train .step.active{ background:var(--ink); color:var(--paper); }
+  .train .step.active .n, .train .step.active .d{ color:rgba(244,242,238,.7); }
+
+  /* Quote pull */
+  .pull{ font-weight:300; font-size:54px; line-height:1.06; letter-spacing:-.02em; max-width:1300px; }
+  .pull em{ font-style:normal; font-weight:700; }
+
+  /* Closing slide */
+  .end-mark{
+    font-weight:900; font-size:380px; line-height:.85; letter-spacing:-.05em;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============== 1. TITLE ============== -->
+<section class="slide title-slide">
+  <div class="megamark"></div>
+  <div class="ring"></div>
+  <div class="ring2"></div>
+  <div class="dot"></div>
+
+  <div class="meta-bar">
+    <span>Innopolis University &nbsp;·&nbsp; Data Mining</span>
+    <span>CRISP-DM Methodology &nbsp;/&nbsp; 2026</span>
+  </div>
+
+  <div class="title-block">
+    <div class="kicker"><span class="bar"></span><span>A Six-Phase Report</span><span class="bar"></span></div>
+    <h1>Predicting<br/><em>Pull&nbsp;Request</em><br/>Merge Outcomes.</h1>
+  </div>
+
+  <div class="authors">
+    <div class="a">
+      <span>Author / Modeling</span>
+      <strong>Nikita Zagainov</strong>
+      <span>Data Scientist · ML Engineer</span>
+    </div>
+    <div class="a">
+      <span>Author / Business</span>
+      <strong>Dmitry Tetkin</strong>
+      <span>Project Manager · Business Analyst</span>
+    </div>
+    <div class="a" style="text-align:right;">
+      <span>Source</span>
+      <strong>GH Archive · July 2015</strong>
+      <span>9,269,533 public events</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 2. AT A GLANCE ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>00 &nbsp;·&nbsp; Overview <span class="dot"></span> At a glance</span><span class="right">CRISP-DM / Six Phases</span></div>
+  <div class="footer"><span>Predicting PR Merge Outcomes</span><span class="pg">02 / 14</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="height:100%;">
+      <div style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div class="stamp solid">Brief</div>
+          <h2 class="h1" style="margin-top:24px; font-size:84px;">Can public<br/>GitHub events<br/>predict whether<br/>a PR gets merged?</h2>
+        </div>
+        <p class="lead">A leakage-aware ranking model trained on PR-opening signals and pre-opening activity. Designed as a <em>triage tool</em>, not an automated decision system.</p>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr; align-content:center; gap:40px;">
+        <div class="stat"><div class="num">9.27M</div><div class="lab">Public events parsed</div></div>
+        <div class="stat"><div class="num">195K</div><div class="lab">Clean PR lifecycles</div></div>
+        <div class="stat"><div class="num">0.7324</div><div class="lab">ROC-AUC · best model</div></div>
+        <div class="stat"><div class="num">0.99</div><div class="lab">Non-merge precision @ top 1%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 3. PHASES MAP ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>00 &nbsp;·&nbsp; Method <span class="dot"></span> CRISP-DM Map</span><span class="right">Six phases · One thread</span></div>
+  <div class="footer"><span>Methodology</span><span class="pg">03 / 14</span></div>
+
+  <div class="body">
+    <div style="margin-bottom:34px;">
+      <div class="stamp">Phases of work</div>
+      <h2 class="h2" style="margin-top:18px;">A linear story, told in six acts.</h2>
+    </div>
+
+    <div class="train">
+      <div class="step"><div><div class="n">Phase 01</div><div class="t" style="margin-top:10px;">Business<br/>Understanding</div></div><div class="d">Why merge prediction matters for triage.</div></div>
+      <div class="step"><div><div class="n">Phase 02</div><div class="t" style="margin-top:10px;">Data<br/>Understanding</div></div><div class="d">GH Archive event stream, 14 event types.</div></div>
+      <div class="step"><div><div class="n">Phase 03</div><div class="t" style="margin-top:10px;">Data<br/>Preparation</div></div><div class="d">Leakage-aware PR-level table, 26 features.</div></div>
+      <div class="step"><div><div class="n">Phase 04</div><div class="t" style="margin-top:10px;">Modeling</div></div><div class="d">Four families. Linear, tree, boosted, dummy.</div></div>
+      <div class="step"><div><div class="n">Phase 05</div><div class="t" style="margin-top:10px;">Evaluation</div></div><div class="d">Ranking, risk@k, threshold analysis.</div></div>
+      <div class="step active"><div><div class="n ink-invert">Phase 06</div><div class="t" style="margin-top:10px;">Deployment</div></div><div class="d">Triage support — not auto-decision.</div></div>
+    </div>
+
+    <div class="grid col-3" style="margin-top:48px;">
+      <div>
+        <div class="small upper mono">Tooling</div>
+        <p class="body-text" style="margin-top:8px;">Python · Polars · pyarrow · scikit-learn · matplotlib.</p>
+      </div>
+      <div>
+        <div class="small upper mono">Sample window</div>
+        <p class="body-text" style="margin-top:8px;">Hourly GH Archive files, continuous July 2015.</p>
+      </div>
+      <div>
+        <div class="small upper mono">Cost envelope</div>
+        <p class="body-text" style="margin-top:8px;">≈ <span class="mono">$688.40</span> · 130 hrs of analyst time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 4. PHASE 1 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Business Understanding</span><span class="right">CRISP-DM / 1.0</span></div>
+  <div class="footer"><span>The question that frames everything</span><span class="pg">04 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">01</div>
+    <div class="phase-name">Business<br/>Understanding.</div>
+    <div class="phase-sub">Maintainers drown in pull requests. Contributors guess at the rules. We ask: do early, public signals already say which PRs will land?</div>
+  </div>
+</section>
+
+<!-- ============== 5. PHASE 1 CONTENT ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>01 &nbsp;·&nbsp; Business <span class="dot"></span> Objectives & Goals</span><span class="right">Why this project</span></div>
+  <div class="footer"><span>Phase 01 · Business Understanding</span><span class="pg">05 / 14</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="height:100%; gap:64px;">
+      <div>
+        <div class="stamp">1.1 Objectives</div>
+        <h2 class="h2" style="margin-top:22px; max-width:540px;">Rank newly opened PRs by merge likelihood &mdash; before maintainers spend a minute on them.</h2>
+        <p class="lead" style="margin-top:24px;">The model is a <em>prioritization layer</em> on top of GitHub's firehose. It does not reproduce maintainer reasoning; it surfaces probable outcomes from public signals.</p>
+
+        <div style="margin-top:40px;">
+          <div class="small upper mono">Decision-support value</div>
+          <p class="body-text" style="margin-top:8px;">For a team reviewing 500 PRs/month, even a 10% triage saving recovers ≈ <span class="mono">$1,512 / yr</span> at $30/hr.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="stamp">1.3 Data-mining goals</div>
+        <ul class="list" style="margin-top:18px;">
+          <li><span class="k">G·01</span><span class="v">Convert raw GH Archive events into a PR-level supervised dataset.</span></li>
+          <li><span class="k">G·02</span><span class="v">Predict <span class="mono">P(merged = 1 | X)</span> as binary classification.</span></li>
+          <li><span class="k">G·03</span><span class="v">Compare linear and non-linear models under one shared split.</span></li>
+          <li><span class="k">G·04</span><span class="v">Identify which pre-opening signals drive merge ranking.</span></li>
+          <li><span class="k">G·05</span><span class="v">Keep all features compliant with PR-publication-time information.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 6. PHASE 2 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Data Understanding</span><span class="right">CRISP-DM / 2.0</span></div>
+  <div class="footer"><span>What lives inside 9.27M public events</span><span class="pg">06 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">02</div>
+    <div class="phase-name">Data<br/>Understanding.</div>
+    <div class="phase-sub">A flat analytical event table — JSON payloads preserved, top-level fields lifted, 14 event types catalogued, lifecycle coverage verified.</div>
+  </div>
+</section>
+
+<!-- ============== 7. PHASE 2 CONTENT ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>02 &nbsp;·&nbsp; Data <span class="dot"></span> Inventory & Quality</span><span class="right">GH Archive · July 2015</span></div>
+  <div class="footer"><span>Phase 02 · Data Understanding</span><span class="pg">07 / 14</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="gap:64px; height:100%;">
+      <div>
+        <div class="stamp">2.2 Event mix</div>
+        <h2 class="h3" style="margin-top:18px;">Top event types in the converted sample.</h2>
+        <table class="tbl" style="margin-top:22px;">
+          <thead><tr><th>Event type</th><th class="num">Count</th><th class="num">Share</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">PushEvent</td><td class="num">4,417,737</td><td class="num">47.7%</td></tr>
+            <tr><td class="mono">CreateEvent</td><td class="num">1,329,287</td><td class="num">14.3%</td></tr>
+            <tr><td class="mono">IssueCommentEvent</td><td class="num">886,068</td><td class="num">9.6%</td></tr>
+            <tr><td class="mono">WatchEvent</td><td class="num">826,509</td><td class="num">8.9%</td></tr>
+            <tr class="hl"><td class="mono">PullRequestEvent</td><td class="num">470,260</td><td class="num">5.1%</td></tr>
+            <tr><td>Other event types</td><td class="num">1,339,672</td><td class="num">14.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="stamp">2.4 Quality checks</div>
+        <h2 class="h3" style="margin-top:18px;">What the audit confirmed.</h2>
+        <ul class="list" style="margin-top:18px;">
+          <li><span class="k">OK</span><span class="v">Event volume valid &mdash; 9,269,533 records.</span></li>
+          <li><span class="k">OK</span><span class="v">Merge label present in all closed PR payloads.</span></li>
+          <li><span class="k">LIM</span><span class="v">Lifecycle coverage restricted &mdash; 195,425 usable PRs.</span></li>
+          <li><span class="k">DROP</span><span class="v">Author-association field constant; excluded from features.</span></li>
+          <li><span class="k">CTRL</span><span class="v">Closure-time fields kept only for target / diagnostics.</span></li>
+        </ul>
+        <p class="small" style="margin-top:22px;">Action distribution within <span class="mono">PullRequestEvent</span>: 238,541 opened · 228,072 closed · 3,647 reopened.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 8. PHASE 3 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Data Preparation</span><span class="right">CRISP-DM / 3.0</span></div>
+  <div class="footer"><span>From event stream to PR-level table</span><span class="pg">08 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">03</div>
+    <div class="phase-name">Data<br/>Preparation.</div>
+    <div class="phase-sub">One row per pull request. 26 numeric features. Strict leakage policy: no closure-time fields, no same-day future events.</div>
+  </div>
+</section>
+
+<!-- ============== 9. PHASE 3 CONTENT ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>03 &nbsp;·&nbsp; Preparation <span class="dot"></span> Pipeline & Features</span><span class="right">PR-level analytical table</span></div>
+  <div class="footer"><span>Phase 03 · Data Preparation</span><span class="pg">09 / 14</span></div>
+
+  <div class="body">
+    <div class="stamp">3.1 — 3.5 Pipeline</div>
+    <h2 class="h2" style="margin-top:18px; max-width:1100px;">Five steps. One leakage-aware table.</h2>
+
+    <div class="train" style="margin-top:36px; grid-template-columns:repeat(5,1fr);">
+      <div class="step"><div><div class="n">Step 01</div><div class="t" style="margin-top:8px;">Select</div></div><div class="d">Retain PRs with both opened &amp; closed events containing merge label.</div></div>
+      <div class="step"><div><div class="n">Step 02</div><div class="t" style="margin-top:8px;">Clean</div></div><div class="d">Sort by timestamp, keep first opening / first closing per PR id.</div></div>
+      <div class="step"><div><div class="n">Step 03</div><div class="t" style="margin-top:8px;">Construct</div></div><div class="d">Target <span class="mono">merged ∈ {0,1}</span>; merge rate <span class="mono">0.8574</span>.</div></div>
+      <div class="step"><div><div class="n">Step 04</div><div class="t" style="margin-top:8px;">Integrate</div></div><div class="d">Join opening + closure + previous-day repo / actor history.</div></div>
+      <div class="step"><div><div class="n">Step 05</div><div class="t" style="margin-top:8px;">Format</div></div><div class="d">26 numeric features × 195,425 rows. Median-imputed.</div></div>
+    </div>
+
+    <div class="grid col-3" style="margin-top:54px; gap:48px;">
+      <div>
+        <div class="small upper mono">Opening-time features</div>
+        <p class="body-text" style="margin-top:8px;">commits · additions · deletions · changed files · opening hour · weekday · weekend · draft · log-size variants.</p>
+      </div>
+      <div>
+        <div class="small upper mono">Repository history</div>
+        <p class="body-text" style="margin-top:8px;">Previous-day repo events, PRs, issue-comments, push events, cumulative actor-days.</p>
+      </div>
+      <div>
+        <div class="small upper mono">Actor history</div>
+        <p class="body-text" style="margin-top:8px;">Previous-day actor activity, PR volume, comment volume, push activity, repo-days.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:42px; padding:18px 22px; border:1px solid var(--ink); display:flex; gap:32px; align-items:center;">
+      <span class="stamp solid">Leakage rule</span>
+      <p class="body-text" style="margin:0;">For a PR opened on date <span class="mono">d</span>, every event from date <span class="mono">d</span> is excluded from history features. Closure-time fields are never inputs.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 10. PHASE 4 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Modeling</span><span class="right">CRISP-DM / 4.0</span></div>
+  <div class="footer"><span>Four families · One held-out test set</span><span class="pg">10 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">04</div>
+    <div class="phase-name">Modeling.</div>
+    <div class="phase-sub">Dummy. Logistic Regression. Random Forest. Histogram Gradient Boosting. Same features. Same split. Stratified 75 / 25.</div>
+  </div>
+</section>
+
+<!-- ============== 11. PHASE 4 CONTENT ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>04 &nbsp;·&nbsp; Modeling <span class="dot"></span> Held-out comparison</span><span class="right">48,857 test PRs</span></div>
+  <div class="footer"><span>Phase 04 · Modeling</span><span class="pg">11 / 14</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="gap:64px; height:100%;">
+      <div>
+        <div class="stamp">4.4 Assess</div>
+        <h2 class="h2" style="margin-top:18px;">HistGradientBoosting wins ranking.</h2>
+        <p class="lead" style="margin-top:18px;">F1 alone is misleading under 0.857 base rate &mdash; ROC-AUC and PR-AUC tell the real story.</p>
+
+        <div style="margin-top:32px;">
+          <div class="bar-row"><div class="name">Hist Gradient Boosting</div><div class="bar"><i style="width:97.6%"></i></div><div class="val">0.7324</div></div>
+          <div class="bar-row"><div class="name">Random Forest</div><div class="bar"><i style="width:96.9%"></i></div><div class="val">0.7271</div></div>
+          <div class="bar-row"><div class="name">Logistic Regression</div><div class="bar"><i style="width:87.3%"></i></div><div class="val">0.6547</div></div>
+          <div class="bar-row"><div class="name">Dummy (most frequent)</div><div class="bar"><i style="width:66.6%"></i></div><div class="val">0.5000</div></div>
+        </div>
+        <p class="small" style="margin-top:14px;">Bars scaled by ROC-AUC.</p>
+      </div>
+
+      <div>
+        <div class="stamp">4.4 Top permutation importance</div>
+        <h2 class="h3" style="margin-top:14px;">Context features beat PR-size features.</h2>
+        <table class="tbl" style="margin-top:22px;">
+          <thead><tr><th>Feature</th><th class="num">Mean Δ ROC-AUC</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">repo_push_events_before_day</td><td class="num">0.0644</td></tr>
+            <tr><td class="mono">repo_actor_days_before_day</td><td class="num">0.0579</td></tr>
+            <tr><td class="mono">actor_push_events_before_day</td><td class="num">0.0368</td></tr>
+            <tr><td class="mono">repo_issue_comment_share_before_day</td><td class="num">0.0330</td></tr>
+            <tr><td class="mono">actor_pr_events_before_day</td><td class="num">0.0171</td></tr>
+            <tr><td class="mono">repo_pr_share_before_day</td><td class="num">0.0162</td></tr>
+            <tr><td class="mono">commits</td><td class="num">0.0149</td></tr>
+          </tbody>
+        </table>
+        <p class="small" style="margin-top:14px;">Repository workflow + contributor context > raw PR size.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 12. PHASE 5 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Evaluation</span><span class="right">CRISP-DM / 5.0</span></div>
+  <div class="footer"><span>Ranking, not classification</span><span class="pg">12 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">05</div>
+    <div class="phase-name">Evaluation.</div>
+    <div class="phase-sub">The model is not a hard classifier at threshold 0.5. It is a risk-ranking instrument — and at the top 1% it is almost surgical.</div>
+  </div>
+</section>
+
+<!-- ============== 13. PHASE 5 CONTENT ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>05 &nbsp;·&nbsp; Evaluation <span class="dot"></span> Risk ranking</span><span class="right">Predicted probability</span></div>
+  <div class="footer"><span>Phase 05 · Evaluation</span><span class="pg">13 / 14</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="gap:56px; height:100%;">
+      <div style="display:flex; flex-direction:column; gap:22px;">
+        <div>
+          <div class="stamp">5.1 Result shape</div>
+          <h2 class="h3" style="margin-top:14px;">Predicted merge-probability distribution.</h2>
+        </div>
+        <div class="figcard">
+          <img src="img/predicted_probability_distribution.png" alt="Predicted merge probability distribution"/>
+          <div class="figcap">Fig. 01 &nbsp;·&nbsp; Non-merged PRs carry a heavier low-probability tail &mdash; the foundation of the risk-ranking signal.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="stamp">5.1 Risk precision @ k</div>
+        <h2 class="h3" style="margin-top:14px;">The top-ranked tail is mostly non-merged.</h2>
+
+        <table class="tbl" style="margin-top:22px;">
+          <thead><tr><th>Risk-ranked subset</th><th class="num">Non-merge precision</th><th class="num">Baseline rate</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>Top 1%</td><td class="num">0.9939</td><td class="num">0.1426</td></tr>
+            <tr><td>Top 5%</td><td class="num">0.6257</td><td class="num">0.1426</td></tr>
+            <tr><td>Top 10%</td><td class="num">0.4581</td><td class="num">0.1426</td></tr>
+            <tr><td>Top 20%</td><td class="num">0.3325</td><td class="num">0.1426</td></tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top:30px; padding:20px 22px; border:1px solid var(--ink);">
+          <p class="pull" style="font-size:30px;">In the top <em>1%</em> highest-risk PRs, <em>99.4%</em> are actually non-merged &mdash; <em>7×</em> the baseline rate.</p>
+        </div>
+
+        <p class="small" style="margin-top:18px;">Risk = <span class="mono">1 − P(merged)</span>. Threshold analysis confirms the precision/recall trade: at risk 0.20 the model flags 15% of PRs at non-merge precision 0.38.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 14. PHASE 6 DIVIDER ============== -->
+<section class="slide divider">
+  <div class="chrome"></div>
+  <div class="crown"><span>Phase <span class="dot"></span> Deployment</span><span class="right">CRISP-DM / 6.0</span></div>
+  <div class="footer"><span>Triage support, not gatekeeping</span><span class="pg">14 / 14</span></div>
+  <div class="body" style="display:flex; flex-direction:column; justify-content:flex-end;">
+    <div class="phase-num">06</div>
+    <div class="phase-name">Deployment.</div>
+    <div class="phase-sub">No live integration. The deliverable is a reproducible analytical artifact: report, code, figures — and a clear scope for what the score may and may not do.</div>
+  </div>
+</section>
+
+<!-- ============== 15. CLOSING / TAKEAWAYS ============== -->
+<section class="slide">
+  <div class="chrome"></div>
+  <div class="crown"><span>06 &nbsp;·&nbsp; Deployment <span class="dot"></span> Use, monitor, conclude</span><span class="right">Final read</span></div>
+  <div class="footer"><span>Phase 06 · Deployment & Conclusions</span><span class="pg">15 / 15</span></div>
+
+  <div class="body">
+    <div class="grid col-2" style="gap:64px; height:100%;">
+      <div>
+        <div class="stamp">6.1 Recommended use</div>
+        <h2 class="h2" style="margin-top:18px; max-width:560px;">A maintainer dashboard, not a merge gate.</h2>
+        <ul class="list" style="margin-top:24px;">
+          <li><span class="k">SHOW</span><span class="v">Predicted merge probability + non-merge risk score.</span></li>
+          <li><span class="k">SHOW</span><span class="v">Most important feature groups: repo activity, contributor history.</span></li>
+          <li><span class="k">WARN</span><span class="v">Data limitations and model scope, on-screen.</span></li>
+          <li><span class="k">NEVER</span><span class="v">Auto-reject, hide, or deprioritize a contributor.</span></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="stamp">6.4 Lessons & next steps</div>
+        <h2 class="h3" style="margin-top:14px;">What we proved &mdash; and what's next.</h2>
+
+        <div style="margin-top:18px;">
+          <div class="small upper mono">Proved</div>
+          <p class="body-text" style="margin-top:6px;">Public, pre-opening event signals carry useful ranking signal for PR merge outcomes. Repository &amp; contributor context dominate raw PR size.</p>
+        </div>
+
+        <div style="margin-top:22px;">
+          <div class="small upper mono">Open</div>
+          <p class="body-text" style="margin-top:6px;">Longer archive window · exact-timestamp history · early-interaction features (first 6&ndash;24h) · time-based validation · richer GitHub fields.</p>
+        </div>
+
+        <div style="margin-top:30px; padding:22px; background:var(--ink); color:var(--paper);">
+          <div class="small upper mono" style="color:rgba(244,242,238,.6);">Final position</div>
+          <p class="h3" style="margin-top:8px; color:var(--paper); font-weight:600;">A proof-of-concept ranking model for PR outcome risk &mdash; useful for prioritization, insufficient for automation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== 16. END MARK ============== -->
+<section class="slide end-slide">
+  <div class="end-mega"></div>
+  <div class="end-ring"></div>
+  <div class="end-ring2"></div>
+  <div class="end-dot"></div>
+
+  <div class="end-meta">
+    <span>End of Report</span>
+    <span>CRISP-DM · 2026</span>
+  </div>
+
+  <div class="end-block">
+    <div class="end-kicker"><span class="bar"></span><span>Thank you</span></div>
+    <h1 class="end-h1">Questions<br/>welcome.</h1>
+  </div>
+
+  <p class="lead end-lead">Public-event mining offers a leakage-aware path to PR triage signal &mdash; provided we ship it as a tool, not a verdict.</p>
+</section>
+
+<style>
+  .end-slide{ background:var(--paper); position:relative; }
+  .end-mega{ position:absolute; left:-180px; bottom:-180px; width:560px; height:560px; border-radius:50%; background:var(--ink); }
+  .end-ring{ position:absolute; left:-60px; bottom:-60px; width:340px; height:340px; border-radius:50%; border:1px solid rgba(244,242,238,.28); }
+  .end-ring2{ position:absolute; left:30px; bottom:30px; width:170px; height:170px; border-radius:50%; border:1px solid rgba(244,242,238,.45); }
+  .end-dot{ position:absolute; left:110px; bottom:110px; width:8px; height:8px; border-radius:50%; background:var(--paper); }
+  .end-meta{ position:absolute; left:64px; right:64px; top:64px; display:flex; justify-content:space-between; font-family:"RoobertMono"; font-size:13px; letter-spacing:.2em; text-transform:uppercase; z-index:2; }
+  .end-block{ position:absolute; left:64px; right:64px; top:180px; z-index:2; }
+  .end-kicker{ font-family:"RoobertMono"; font-size:14px; letter-spacing:.28em; text-transform:uppercase; margin-bottom:28px; display:flex; gap:18px; align-items:center; }
+  .end-kicker .bar{ display:inline-block; width:48px; height:1px; background:var(--ink); }
+  .end-h1{ font-weight:900; font-size:172px; line-height:.86; letter-spacing:-.045em; }
+  .end-lead{ position:absolute; right:64px; bottom:80px; max-width:480px; text-align:right; z-index:2; }
+</style>
+
+</body>
+</html>
